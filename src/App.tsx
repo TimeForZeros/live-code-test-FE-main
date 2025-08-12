@@ -1,5 +1,6 @@
 import { lazy, Suspense, useMemo, useCallback } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { ErrorBoundary } from 'react-error-boundary';
 // mailto:brynner.doyle@aiq.com
 
 const ReallyLargeComponent = lazy(() => import('./components/ReallyLargeComponent'));
@@ -63,35 +64,41 @@ const exampleFilterCriteria: FilterCriteria = {
   showOnlyIndependent: true,
 };
 
-export default function App() {
+const CountryList = () => {
   // TODO: State for countries data, loading, error
   // TODO: Fetch data from API_ENDPOINT with retry logic
   // TODO: Create filterCountries(countries, criteria) function
-  const { data, isPending } = useSuspenseQuery({
+  const { data } = useSuspenseQuery({
     queryKey: ['countries'],
     queryFn: async () => {
       const res = await fetch(API_ENDPOINT);
+      if (!res.ok) throw new Error('Fetch failed!');
       return res.json();
     },
+    retry: 3,
+    retryDelay: (attempt) => 100 * Math.max(2, attempt),
   });
 
-    const filterCountries = useCallback((coutnries: CountryApiResponse[], criteria: FilterCriteria) => {
-    const nameMatch = (country: CountryApiResponse) =>
-      Object.values(country.name).some(
-        (name) => typeof name === 'string' && name.includes(criteria.searchTerm),
-      );
-    const continentMatch = (country: CountryApiResponse) =>
-      country.continents.some((continent: string) =>
-        criteria.selectedContinents.includes(continent),
-      );
-    return coutnries.filter((country: CountryApiResponse) => {
-      if (!nameMatch(country)) return;
-      if (!continentMatch(country)) return;
-      if (country.population < criteria.minPopulation) return;
-      if (country.independent !== criteria.showOnlyIndependent) return;
-      return true;
-    });
-  }, [data]);
+  const filterCountries = useCallback(
+    (coutnries: CountryApiResponse[], criteria: FilterCriteria) => {
+      const nameMatch = (country: CountryApiResponse) =>
+        Object.values(country.name).some(
+          (name) => typeof name === 'string' && name.includes(criteria.searchTerm),
+        );
+      const continentMatch = (country: CountryApiResponse) =>
+        country.continents.some((continent: string) =>
+          criteria.selectedContinents.includes(continent),
+        );
+      return coutnries.filter((country: CountryApiResponse) => {
+        if (!nameMatch(country)) return;
+        if (!continentMatch(country)) return;
+        if (country.population < criteria.minPopulation) return;
+        if (country.independent !== criteria.showOnlyIndependent) return;
+        return true;
+      });
+    },
+    [data],
+  );
 
   const continentData = useMemo(() => {
     const continentalMap: Record<string, CountryApiResponse[]> = {};
@@ -116,27 +123,40 @@ export default function App() {
   }, [data]);
 
   return (
+    <>
+      {Object.entries(continentData).map(
+        ([continent, countries]: [string, CountryApiResponse[]]) => (
+          <div>
+            <h2>{continent}</h2>
+            <ul>
+              {countries.map((country) => (
+                <li>{country.name.official}</li>
+              ))}
+            </ul>
+          </div>
+        ),
+      )}
+    </>
+  );
+};
+const ErrorComponent = () => <div>
+  An error occurred!
+</div>
+
+export default function App() {
+  return (
     <div className='app-container'>
       <h1>Countries Population Dashboard</h1>
-      <Suspense fallback={'loading...'}>
-        {/* TODO: Show loading/error states */}
-        <div className='heavy-component-container'>
-          {Object.entries(continentData).map(
-            ([continent, countries]: [string, CountryApiResponse[]]) => (
-              <div>
-                <h2>{continent}</h2>
-                <ul>
-                  {countries.map((country) => (
-                    <li>{country.name.official}</li>
-                  ))}
-                </ul>
-              </div>
-            ),
-          )}
-          {/* TODO: Prevent component from blocking page load */}
-          <ReallyLargeComponent />
-        </div>
-      </Suspense>
+      <ErrorBoundary FallbackComponent={ErrorComponent}>
+        <Suspense fallback={'loading...'}>
+          {/* TODO: Show loading/error states */}
+          <div className='heavy-component-container'>
+            {/* TODO: Prevent component from blocking page load */}
+            <ReallyLargeComponent />
+            <CountryList />
+          </div>
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }
