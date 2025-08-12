@@ -1,7 +1,22 @@
 import { lazy, Suspense, useMemo, useCallback } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
+import {
+  createColumnHelper,
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+} from '@tanstack/react-table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 // mailto:brynner.doyle@aiq.com
+
 
 const ReallyLargeComponent = lazy(() => import('./components/ReallyLargeComponent'));
 /* LIVE CODING CHALLENGE 
@@ -64,10 +79,9 @@ const exampleFilterCriteria: FilterCriteria = {
   showOnlyIndependent: true,
 };
 
-const CountryList = () => {
-  // TODO: State for countries data, loading, error
-  // TODO: Fetch data from API_ENDPOINT with retry logic
-  // TODO: Create filterCountries(countries, criteria) function
+const ErrorComponent = () => <div>An error occurred!</div>;
+
+const CountryTable = () => {
   const { data } = useSuspenseQuery({
     queryKey: ['countries'],
     queryFn: async () => {
@@ -78,6 +92,32 @@ const CountryList = () => {
     retry: 3,
     retryDelay: (attempt) => 100 * Math.max(2, attempt),
   });
+
+  const columnHelper = createColumnHelper();
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('name.official', {
+        header: 'Name',
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor('populationDensity', {
+        header: 'Density',
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor('continents', {
+        header: 'Continents',
+        cell: (info) => {
+          const cellData = info.getValue() as string[];
+          return cellData.join(', ');
+        },
+      }),
+      columnHelper.accessor('flag', {
+        header: 'Flag',
+        cell: (info) => info.getValue(),
+      }),
+    ],
+    [],
+  );
 
   const filterCountries = useCallback(
     (coutnries: CountryApiResponse[], criteria: FilterCriteria) => {
@@ -122,41 +162,56 @@ const CountryList = () => {
     return continentalMap;
   }, [data]);
 
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   return (
-    <>
-      {Object.entries(continentData).map(
-        ([continent, countries]: [string, CountryApiResponse[]]) => (
-          <div>
-            <h2>{continent}</h2>
-            <ul>
-              {countries.map((country) => (
-                <li>{country.name.official}</li>
-              ))}
-            </ul>
-          </div>
-        ),
-      )}
-    </>
+    <Table>
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => (
+              <TableHead key={header.id}>
+                {header.isPlaceholder
+                  ? null
+                  : flexRender(header.column.columnDef.header, header.getContext())}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => (
+          <TableRow key={row.id}>
+            {row.getVisibleCells().map((cell) => (
+              <TableCell key={cell.id}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 };
-const ErrorComponent = () => <div>
-  An error occurred!
-</div>
 
 export default function App() {
   return (
     <div className='app-container'>
-      <h1>Countries Population Dashboard</h1>
-      <ErrorBoundary FallbackComponent={ErrorComponent}>
-        <Suspense fallback={'loading...'}>
-          {/* TODO: Show loading/error states */}
-          <div className='heavy-component-container'>
-            {/* TODO: Prevent component from blocking page load */}
-            <ReallyLargeComponent />
-            <CountryList />
-          </div>
-        </Suspense>
-      </ErrorBoundary>
+      <h1 className='text-3xl text-center'>Countries Population Dashboard</h1>
+      <div className='flex justify-center'>
+        <ErrorBoundary FallbackComponent={ErrorComponent}>
+          <Suspense fallback={'loading...'}>
+            <div className='heavy-component-container'>
+              <ReallyLargeComponent />
+              <CountryTable />
+            </div>
+          </Suspense>
+        </ErrorBoundary>
+      </div>
     </div>
   );
 }
