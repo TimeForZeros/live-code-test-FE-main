@@ -1,7 +1,9 @@
-import React, { Suspense } from 'react';
-import ReallyLargeComponent from './components/ReallyLargeComponent';
+import { lazy, Suspense } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 // mailto:brynner.doyle@aiq.com
+
+
+const ReallyLargeComponent = lazy(() => import('./components/ReallyLargeComponent'))
 /* LIVE CODING CHALLENGE 
    
    TASKS:
@@ -80,6 +82,7 @@ export default function App() {
       return true;
     });
   };
+
   const { data, isPending } = useSuspenseQuery({
     queryKey: ['countries'],
     queryFn: async () => {
@@ -87,7 +90,7 @@ export default function App() {
       return res.json();
     },
   });
-  if (!isPending) return;
+
   const continentalMap: Record<string, CountryApiResponse[]> = {};
   data
     .map((country: CountryApiResponse) => {
@@ -122,8 +125,6 @@ export default function App() {
     <div className='app-container'>
       <h1>Countries Population Dashboard</h1>
       <Suspense fallback={'loading...'}>
-        {/* {data ?? data} */}
-
         {/* TODO: Show loading/error states */}
 
         <div className='heavy-component-container'>
