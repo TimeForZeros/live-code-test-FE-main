@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo, useCallback } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
+import { create } from 'zustand';
 import {
   createColumnHelper,
   useReactTable,
@@ -17,6 +18,31 @@ import {
 } from '@/components/ui/table';
 // mailto:brynner.doyle@aiq.com
 
+// Filter criteria
+export type FilterCriteria = {
+  searchTerm: string;
+  minPopulation: number;
+  selectedContinents: string[];
+  showOnlyIndependent: boolean;
+};
+
+const useFilterStore = create<FilterCriteria>((set) => ({
+  searchTerm: '',
+  minPopulation: 0,
+  selectedContinents: [],
+  showOnlyIndependent: false,
+  setSearchTerm: (searchTerm: string) => set({ searchTerm }),
+  setMinPopulation: (minPopulation: number) => set({ minPopulation }),
+  toggleContinent: (continent: string) =>
+    set((state) => {
+      const selectedContinents = state.selectedContinents.includes(continent)
+        ? state.selectedContinents.filter((c) => c !== continent)
+        : [...state.selectedContinents, continent];
+      return { selectedContinents };
+    }),
+  toggleShowOnlyIndependent: () =>
+    set((state) => ({ showOnlyIndependent: !state.showOnlyIndependent })),
+}));
 
 const ReallyLargeComponent = lazy(() => import('./components/ReallyLargeComponent'));
 /* LIVE CODING CHALLENGE 
@@ -64,19 +90,97 @@ export type CountryApiResponse = {
   cca2: string;
 };
 
-// Filter criteria
-export type FilterCriteria = {
-  searchTerm: string;
-  minPopulation: number;
-  selectedContinents: string[];
-  showOnlyIndependent: boolean;
-};
+
 
 const exampleFilterCriteria: FilterCriteria = {
   searchTerm: 'Lit',
   minPopulation: 2794600,
   selectedContinents: ['Europe'],
   showOnlyIndependent: true,
+};
+
+const FilterControls = () => {
+  const {
+    searchTerm,
+    minPopulation,
+    selectedContinents,
+    showOnlyIndependent,
+    setSearchTerm,
+    setMinPopulation,
+    toggleContinent,
+    toggleShowOnlyIndependent,
+  } = useFilterStore();
+
+  const continents = [
+    'Africa',
+    'Asia',
+    'Europe',
+    'North America',
+    'South America',
+    'Oceania',
+    'Antarctica',
+  ];
+
+  return (
+    <div className='p-4 bg-gray-100 rounded-lg shadow-inner flex flex-wrap gap-4 items-center justify-center'>
+      <div className='flex items-center gap-2'>
+        <label htmlFor='searchTerm' className='font-semibold text-gray-700'>
+          Search:
+        </label>
+        <input
+          id='searchTerm'
+          type='text'
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className='px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+        />
+      </div>
+
+      <div className='flex items-center gap-2'>
+        <label htmlFor='minPopulation' className='font-semibold text-gray-700'>
+          Min Population:
+        </label>
+        <input
+          id='minPopulation'
+          type='number'
+          value={minPopulation}
+          onChange={(e) => setMinPopulation(Number(e.target.value))}
+          className='px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+        />
+      </div>
+
+      <div className='flex flex-wrap gap-2'>
+        <span className='font-semibold text-gray-700'>Continents:</span>
+        {continents.map((continent) => (
+          <label key={continent} className='flex items-center gap-1 cursor-pointer'>
+            <input
+              type='checkbox'
+              checked={selectedContinents.includes(continent)}
+              onChange={() => toggleContinent(continent)}
+              className='form-checkbox text-blue-600'
+            />
+            {continent}
+          </label>
+        ))}
+      </div>
+
+      <div className='flex items-center gap-2'>
+        <label
+          htmlFor='showOnlyIndependent'
+          className='flex items-center gap-1 font-semibold text-gray-700 cursor-pointer'
+        >
+          <input
+            id='showOnlyIndependent'
+            type='checkbox'
+            checked={showOnlyIndependent}
+            onChange={toggleShowOnlyIndependent}
+            className='form-checkbox text-blue-600'
+          />
+          Show only Independent
+        </label>
+      </div>
+    </div>
+  );
 };
 
 const ErrorComponent = () => <div>An error occurred!</div>;
@@ -98,6 +202,10 @@ const CountryTable = () => {
     () => [
       columnHelper.accessor('name.official', {
         header: 'Name',
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor('population', {
+        header: 'Population',
         cell: (info) => info.getValue(),
       }),
       columnHelper.accessor('populationDensity', {
@@ -162,6 +270,11 @@ const CountryTable = () => {
     return continentalMap;
   }, [data]);
 
+  console.log('*** Continent Data***');
+  console.dir(continentData)
+  console.log('*** Filtered Countries');
+  console.dir(filterCountries(data, exampleFilterCriteria));
+
   const table = useReactTable({
     data,
     columns,
@@ -202,6 +315,7 @@ export default function App() {
   return (
     <div className='app-container'>
       <h1 className='text-3xl text-center'>Countries Population Dashboard</h1>
+        {/* <FilterControls /> */}
       <div className='flex justify-center'>
         <ErrorBoundary FallbackComponent={ErrorComponent}>
           <Suspense fallback={'loading...'}>
