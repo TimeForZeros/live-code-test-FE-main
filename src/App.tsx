@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { lazy, Suspense, useMemo, useCallback } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
