@@ -1,14 +1,12 @@
 import { useFilterStore } from '@/store/filterStore';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Checkbox } from '@radix-ui/react-checkbox';
 import {
   Dialog,
   DialogTrigger,
   DialogContent,
   DialogTitle,
-  DialogDescription,
 } from '@radix-ui/react-dialog';
 import { Button } from './ui/button';
 import { DialogHeader } from './ui/dialog';
