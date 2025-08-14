@@ -7,6 +7,7 @@ import {
   createColumnHelper,
   useReactTable,
   getCoreRowModel,
+  getFilteredRowModel,
   flexRender,
 } from '@tanstack/react-table';
 import {
@@ -17,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-// mailto:brynner.doyle@aiq.com
 
 // Filter criteria
 export type FilterCriteria = {
@@ -90,8 +90,6 @@ export type CountryApiResponse = {
   independent?: boolean;
   cca2: string;
 };
-
-
 
 const exampleFilterCriteria: FilterCriteria = {
   searchTerm: 'Lit',
@@ -168,8 +166,7 @@ const FilterControls = () => {
       <div className='flex items-center gap-2'>
         <label
           htmlFor='showOnlyIndependent'
-          className='flex items-center gap-1 font-semibold text-gray-700 cursor-pointer'
-        >
+          className='flex items-center gap-1 font-semibold text-gray-700 cursor-pointer'>
           <input
             id='showOnlyIndependent'
             type='checkbox'
@@ -198,12 +195,20 @@ const CountryTable = () => {
     retryDelay: (attempt) => 100 * Math.max(2, attempt),
   });
 
+  const filterCriteria = useFilterStore();
+
+  const filterNameFn = (row: Row, columnId: string, filterValue: string) =>
+    Object.values(country.name).some(
+      (name) => typeof name === 'string' && name.includes(criteria.searchTerm),
+    );
+
   const columnHelper = createColumnHelper();
   const columns = useMemo(
     () => [
       columnHelper.accessor('name.official', {
         header: 'Name',
         cell: (info) => info.getValue(),
+        filterFn: filterNameFn,
       }),
       columnHelper.accessor('population', {
         header: 'Population',
@@ -228,26 +233,31 @@ const CountryTable = () => {
     [],
   );
 
-  const filterCountries = useCallback(
-    (coutnries: CountryApiResponse[], criteria: FilterCriteria) => {
-      const nameMatch = (country: CountryApiResponse) =>
-        Object.values(country.name).some(
-          (name) => typeof name === 'string' && name.includes(criteria.searchTerm),
-        );
-      const continentMatch = (country: CountryApiResponse) =>
-        country.continents.some((continent: string) =>
-          criteria.selectedContinents.includes(continent),
-        );
-      return coutnries.filter((country: CountryApiResponse) => {
-        if (!nameMatch(country)) return;
-        if (!continentMatch(country)) return;
-        if (country.population < criteria.minPopulation) return;
-        if (country.independent !== criteria.showOnlyIndependent) return;
-        return true;
-      });
-    },
-    [data],
-  );
+  const globalFilterFn: FilterFn<CountryApiResponse> = (
+    row,
+    columnId,
+    globalFilterValue: FilterCriteria,
+  ) => {
+    const country = row.original;
+    const { searchTerm, minPopulation, selectedContinents, showOnlyIndependent } =
+      globalFilterValue;
+
+    const searchTermMatch =
+      searchTerm === '' ||
+      Object.values(country.name).some(
+        (name) => typeof name === 'string' && name.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+
+    const populationMatch = country.population >= minPopulation;
+
+    const continentMatch =
+      selectedContinents.length === 0 ||
+      country.continents.some((continent) => selectedContinents.includes(continent));
+
+    const independentMatch = !showOnlyIndependent || country.independent;
+
+    return searchTermMatch && populationMatch && continentMatch && independentMatch;
+  };
 
   const continentData = useMemo(() => {
     const continentalMap: Record<string, CountryApiResponse[]> = {};
@@ -272,14 +282,19 @@ const CountryTable = () => {
   }, [data]);
 
   console.log('*** Continent Data***');
-  console.dir(continentData)
+  console.dir(continentData);
   console.log('*** Filtered Countries');
-  console.dir(filterCountries(data, exampleFilterCriteria));
+  // console.dir(filterCountries(data, exampleFilterCriteria));
 
   const table = useReactTable({
     data,
     columns,
+    state: {
+      globalFilter: filterCriteria,
+    },
+    globalFilterFn,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   });
 
   return (
@@ -316,7 +331,7 @@ export default function App() {
   return (
     <div className='app-container'>
       <h1 className='text-3xl text-center'>Countries Population Dashboard</h1>
-        {/* <FilterControls /> */}
+      <FilterControls />
       <div className='flex justify-center'>
         <ErrorBoundary FallbackComponent={ErrorComponent}>
           <Suspense fallback={'loading...'}>
