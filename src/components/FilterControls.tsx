@@ -1,4 +1,17 @@
-import { useFilterStore } from "@/store/filterStore";
+import { useFilterStore } from '@/store/filterStore';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Checkbox } from '@radix-ui/react-checkbox';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@radix-ui/react-dialog';
+import { Button } from './ui/button';
+import { DialogHeader } from './ui/dialog';
 
 const FilterControls = () => {
   const {
@@ -23,62 +36,76 @@ const FilterControls = () => {
   ];
 
   return (
-    <div className='p-4 bg-gray-100 rounded-lg shadow-inner flex flex-wrap gap-4 items-center justify-center'>
-      <div className='flex items-center gap-2'>
-        <label htmlFor='searchTerm' className='font-semibold text-gray-700'>
-          Search:
-        </label>
-        <input
-          id='searchTerm'
-          type='text'
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className='px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
-        />
-      </div>
+    <div className='p-6 max-w-xl mx-auto rounded-xl shadow-lg bg-white'>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant='outline'>Open Filter Settings</Button>
+        </DialogTrigger>
+        <DialogContent className='sm:max-w-[425px]'>
+          <DialogHeader>
+            <DialogTitle>Country Filters</DialogTitle>
+          </DialogHeader>
 
-      <div className='flex items-center gap-2'>
-        <label htmlFor='minPopulation' className='font-semibold text-gray-700'>
-          Min Population:
-        </label>
-        <input
-          id='minPopulation'
-          type='number'
-          value={minPopulation}
-          onChange={(e) => setMinPopulation(Number(e.target.value))}
-          className='px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
-        />
-      </div>
+          <div className='space-y-6 py-4'>
+            <div className='flex flex-col space-y-2'>
+              <Label htmlFor='searchTerm'>Search</Label>
+              <Input
+                id='searchTerm'
+                type='text'
+                placeholder="e.g. 'United States'"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-      <div className='flex flex-wrap gap-2'>
-        <span className='font-semibold text-gray-700'>Continents:</span>
-        {continents.map((continent) => (
-          <label key={continent} className='flex items-center gap-1 cursor-pointer'>
-            <input
-              type='checkbox'
-              checked={selectedContinents.includes(continent)}
-              onChange={() => toggleContinent(continent)}
-              className='form-checkbox text-blue-600'
-            />
-            {continent}
-          </label>
-        ))}
-      </div>
+            <div className='flex flex-col space-y-2'>
+              <Label htmlFor='minPopulation'>Min Population</Label>
+              <Input
+                id='minPopulation'
+                type='number'
+                placeholder='e.g. 1000000'
+                value={minPopulation}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? 0 : Number(e.target.value);
+                  setMinPopulation(value);
+                }}
+              />
+            </div>
 
-      <div className='flex items-center gap-2'>
-        <label
-          htmlFor='showOnlyIndependent'
-          className='flex items-center gap-1 font-semibold text-gray-700 cursor-pointer'>
-          <input
-            id='showOnlyIndependent'
-            type='checkbox'
-            checked={showOnlyIndependent}
-            onChange={toggleShowOnlyIndependent}
-            className='form-checkbox text-blue-600'
-          />
-          Show only Independent
-        </label>
-      </div>
+            <div>
+              <Label className='text-base mb-2 block'>Continents</Label>
+              <p className='text-sm text-muted-foreground mb-4'>
+                Select the continents you want to include.
+              </p>
+              <div className='flex flex-col space-y-2'>
+                {continents.map((continent) => (
+                  <div key={continent} className='flex flex-row items-start space-x-3 space-y-0'>
+                    <Checkbox
+                      id={`continent-${continent}`}
+                      checked={selectedContinents.includes(continent)}
+                      onCheckedChange={() => toggleContinent(continent)}
+                    />
+                    <Label htmlFor={`continent-${continent}`} className='font-normal'>
+                      {continent}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className='flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4'>
+              <Checkbox
+                id='showOnlyIndependent'
+                checked={showOnlyIndependent}
+                onCheckedChange={toggleShowOnlyIndependent}
+              />
+              <div className='space-y-1 leading-none'>
+                <Label htmlFor='showOnlyIndependent'>Show only Independent countries</Label>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -79,8 +79,7 @@ const CountryTable = () => {
     filterValue: FilterState,
   ) => {
     const country = row.original;
-    const { searchTerm, minPopulation, selectedContinents, showOnlyIndependent } =
-      filterValue;
+    const { searchTerm, minPopulation, selectedContinents, showOnlyIndependent } = filterValue;
 
     const searchTermMatch =
       searchTerm === '' ||
