@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ScrollArea } from './ui/scroll-area';
 
 const API_ENDPOINT =
   'https://restcountries.com/v3.1/all?fields=name,population,area,capital,region,continents,flag,flags,independent,cca2';
@@ -36,17 +37,10 @@ const CountryTable = () => {
 
   const filterCriteria = useFilterStore();
 
-  // const exampleFilterCriteria: FilterCriteria = {
-  //   searchTerm: 'Lit',
-  //   minPopulation: 2794600,
-  //   selectedContinents: ['Europe'],
-  //   showOnlyIndependent: true,
-  // };
-
   const columnHelper = createColumnHelper<CountryApiResponse>();
   const columns = useMemo(
     () => [
-      columnHelper.accessor('name.official', {
+      columnHelper.accessor('name.common', {
         header: 'Name',
         cell: (info) => info.getValue(),
       }),
@@ -123,7 +117,6 @@ const CountryTable = () => {
   console.log('*** Continent Data***');
   console.dir(continentData);
   console.log('*** Filtered Countries');
-  // console.dir(filterCountries(data, exampleFilterCriteria));
 
   const table = useReactTable({
     data,
@@ -138,30 +131,32 @@ const CountryTable = () => {
 
   return (
     <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(header.column.columnDef.header, header.getContext())}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
+      <ScrollArea className='h-[50vh] min-w-[400px] max-w-screen whitespace-nowrap rounded-md border'>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </ScrollArea>
     </Table>
   );
 };

@@ -1,13 +1,8 @@
 import { useFilterStore } from '@/store/filterStore';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Checkbox } from '@radix-ui/react-checkbox';
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogTitle,
-} from '@radix-ui/react-dialog';
+import { Checkbox } from './ui/checkbox';
+import { Dialog, DialogTrigger, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { DialogHeader } from './ui/dialog';
 
@@ -34,7 +29,7 @@ const FilterControls = () => {
   ];
 
   return (
-    <div className='p-6 max-w-xl mx-auto rounded-xl shadow-lg bg-white'>
+    // <div className='p-6 max-w-xl mx-auto rounded-xl shadow-lg bg-white'>
       <Dialog>
         <DialogTrigger asChild>
           <Button variant='outline'>Open Filter Settings</Button>
@@ -60,12 +55,13 @@ const FilterControls = () => {
               <Label htmlFor='minPopulation'>Min Population</Label>
               <Input
                 id='minPopulation'
-                type='number'
+                type='text'
                 placeholder='e.g. 1000000'
-                value={minPopulation}
+                value={minPopulation || ''}
                 onChange={(e) => {
-                  const value = e.target.value === '' ? 0 : Number(e.target.value);
-                  setMinPopulation(value);
+                  const numVal = Number(e.target.value);
+                  if (Number.isNaN(numVal)) return;
+                  setMinPopulation(numVal);
                 }}
               />
             </div>
@@ -104,7 +100,7 @@ const FilterControls = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    // </div>
   );
 };
 
